@@ -122,8 +122,16 @@
     </div>
 
     <script>
+        function encodeHTMLToBase64(html) {
+            // Convert Unicode characters to UTF-8
+            const encodedHTML = encodeURIComponent(html).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+                return String.fromCharCode('0x' + p1);
+            });
+            return btoa(encodedHTML);
+        }
+
         async function convert() {
-            const base64 = document.getElementById('base64').value;
+            const rawHtml = document.getElementById('rawHtml').value;
             const image = document.getElementById('image').value;
             const title = document.getElementById('title').value;
             
@@ -131,7 +139,14 @@
             document.getElementById('error').style.display = 'none';
 
             try {
-                const response = await fetch('http://95.89.44.24:8000/convert', {
+                if (!rawHtml) {
+                    throw new Error('Please enter some HTML content');
+                }
+
+                // Encode the raw HTML to Base64
+                const base64 = encodeHTMLToBase64(rawHtml);
+
+                const response = await fetch('http://localhost:8000/convert', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
