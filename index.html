@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord Iframe Embed Generator</title>
-    <meta property="og:title" content="Embed Preview">
+    <title>Discord Embed Generator</title>
+    <!-- Discord will use these meta tags for embedding -->
+    <meta property="og:title" content="Custom Embed">
     <meta property="og:description" content="Check out this embedded content!">
     <meta property="og:image" content="https://example.com/thumbnail.jpg">
     <style>
@@ -20,57 +21,62 @@
             background-color: #2f3136;
             padding: 20px;
             border-radius: 8px;
-            margin-top: 20px;
+            margin: 20px 0;
         }
-        input, button {
+        textarea {
+            width: 100%;
+            height: 150px;
             padding: 10px;
-            margin: 5px;
-            border-radius: 4px;
-            border: 1px solid #202225;
+            margin: 10px 0;
             background-color: #40444b;
             color: white;
+            border: 1px solid #202225;
+            border-radius: 4px;
         }
         button {
             background-color: #5865f2;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
             cursor: pointer;
         }
-        iframe {
-            width: 100%;
-            height: 500px;
-            border: none;
-            border-radius: 8px;
-            margin-top: 20px;
-            background-color: black;
+        .preview {
+            margin: 20px 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Discord Iframe Embed Generator</h1>
-        <input type="text" id="urlInput" placeholder="Enter URL to embed">
-        <button onclick="generateEmbed()">Generate</button>
-        <div id="embedContainer"></div>
+        <h1>Discord Embed Generator</h1>
+        <textarea id="iframeCode" placeholder="Paste your iframe code here..."></textarea>
+        <button onclick="generateEmbed()">Generate Discord Link</button>
+        
         <div id="linkContainer" style="display: none;">
             <p>Share this link in Discord:</p>
-            <input type="text" id="shareLink" readonly>
+            <input type="text" id="shareLink" style="width: 70%; padding: 5px;">
             <button onclick="copyLink()">Copy</button>
+        </div>
+
+        <div class="preview">
+            <h3>Preview:</h3>
+            <div id="embedPreview"></div>
         </div>
     </div>
 
     <script>
         function generateEmbed() {
-            const url = document.getElementById('urlInput').value;
-            if (!url) return;
+            const iframeCode = document.getElementById('iframeCode').value;
+            if (!iframeCode) return;
 
-            const currentUrl = window.location.href.split('?')[0];
-            const shareLink = `${currentUrl}?url=${encodeURIComponent(url)}`;
+            // Convert iframe code to base64 for URL safety
+            const encodedCode = btoa(iframeCode);
+            const shareLink = `${window.location.href.split('?')[0]}?embed=${encodedCode}`;
             
+            // Update UI
             document.getElementById('shareLink').value = shareLink;
             document.getElementById('linkContainer').style.display = 'block';
-            
-            // Update iframe display
-            const embedContainer = document.getElementById('embedContainer');
-            embedContainer.innerHTML = `<iframe src="${url}"></iframe>`;
+            document.getElementById('embedPreview').innerHTML = iframeCode;
         }
 
         function copyLink() {
@@ -79,13 +85,23 @@
             document.execCommand('copy');
         }
 
-        // Load URL from query parameters
-        const params = new URLSearchParams(window.location.search);
-        const urlParam = params.get('url');
-        if (urlParam) {
-            document.getElementById('urlInput').value = urlParam;
-            generateEmbed();
+        // Load embedded content from URL
+        function loadEmbed() {
+            const params = new URLSearchParams(window.location.search);
+            const embedParam = params.get('embed');
+            
+            if (embedParam) {
+                try {
+                    const decodedCode = atob(embedParam);
+                    document.getElementById('embedPreview').innerHTML = decodedCode;
+                } catch (e) {
+                    document.getElementById('embedPreview').innerHTML = 'Invalid embed code';
+                }
+            }
         }
+
+        // Initial load
+        loadEmbed();
     </script>
 </body>
 </html>
