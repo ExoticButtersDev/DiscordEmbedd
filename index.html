@@ -3,99 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Dynamic meta tags -->
-    <meta property="og:title" id="og-title" content="Embed Preview">
-    <meta property="og:description" id="og-description" content="Check out this embedded content!">
-    <meta property="og:image" id="og-image" content="https://your-default-thumbnail.jpg">
-    <meta property="og:url" id="og-url" content="">
-    <meta property="og:type" content="website">
+    <title>Embed to OGP Converter</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #36393f; color: #dcddde; }
-        .container { background-color: #2f3136; padding: 20px; border-radius: 8px; margin: 20px 0; }
-        textarea { width: 100%; height: 150px; padding: 10px; margin: 10px 0; background-color: #40444b; color: white; border: 1px solid #202225; border-radius: 4px; }
-        button { background-color: #5865f2; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
-        input { width: 100%; padding: 8px; margin: 5px 0; background-color: #40444b; color: white; border: 1px solid #202225; border-radius: 4px; }
-    </style>
-    <script>
-        // Immediate meta tag update for Discord crawler
-        function setMetaTagsFromURL() {
-            const params = new URLSearchParams(window.location.search);
-            
-            if (params.has('title')) {
-                document.getElementById('og-title').content = decodeURIComponent(params.get('title'));
-            }
-            if (params.has('description')) {
-                document.getElementById('og-description').content = decodeURIComponent(params.get('description'));
-            }
-            if (params.has('image')) {
-                document.getElementById('og-image').content = decodeURIComponent(params.get('image'));
-            }
-            
-            // Set canonical URL
-            const canonicalUrl = window.location.href.split('?')[0];
-            document.getElementById('og-url').content = canonicalUrl;
+        :root {
+            --background-primary: #36393f;
+            --background-secondary: #2f3136;
+            --background-tertiary: #202225;
+            --text-normal: #dcddde;
+            --brand: #5865f2;
+            --font: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
-        setMetaTagsFromURL();
-    </script>
+
+        body {
+            background-color: var(--background-primary);
+            color: var(--text-normal);
+            font-family: var(--font);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--background-secondary);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #b9bbbe;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            background: var(--background-tertiary);
+            border: 1px solid #040405;
+            border-radius: 3px;
+            color: var(--text-normal);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        button {
+            background: var(--brand);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background: #4752c4;
+        }
+
+        .result {
+            background: var(--background-tertiary);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+
+        .loading {
+            display: none;
+            color: #b9bbbe;
+            margin: 10px 0;
+        }
+
+        .error {
+            color: #ed4245;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>GitHub Pages Discord Embed Generator</h1>
-        <input type="text" id="inputTitle" placeholder="Embed Title">
-        <input type="text" id="inputDescription" placeholder="Embed Description">
-        <input type="text" id="inputImage" placeholder="Thumbnail URL">
-        <textarea id="iframeCode" placeholder="Paste your iframe code here..."></textarea>
-        <button onclick="generateLink()">Generate Discord Link</button>
+        <div class="title">Open Graph Converter 🛠️</div>
         
-        <div id="output" style="display: none; margin-top: 20px;">
-            <p>Share this URL in Discord:</p>
-            <input type="text" id="generatedUrl" readonly>
-            <button onclick="copyUrl()">Copy URL</button>
-            <div id="preview" style="margin-top: 20px;"></div>
+        <div class="input-group">
+            <label for="base64">Base64 Iframe:</label>
+            <textarea id="base64" rows="4" placeholder="Paste your base64 encoded iframe here..."></textarea>
         </div>
+
+        <div class="input-group">
+            <label for="image">Preview Image URL:</label>
+            <input type="text" id="image" placeholder="https://example.com/thumbnail.jpg">
+        </div>
+
+        <div class="input-group">
+            <label for="title">Embed Title:</label>
+            <input type="text" id="title" placeholder="Embedded Content">
+        </div>
+
+        <button onclick="convert()">Convert to OGP</button>
+        <div class="loading" id="loading">Converting... ⏳</div>
+        <div class="error" id="error"></div>
+
+        <div class="result" id="result"></div>
     </div>
 
     <script>
-        function generateLink() {
-            const baseUrl = window.location.href.split('?')[0];
-            const params = new URLSearchParams();
+        async function convert() {
+            const base64 = document.getElementById('base64').value;
+            const image = document.getElementById('image').value;
+            const title = document.getElementById('title').value;
             
-            params.append('title', encodeURIComponent(document.getElementById('inputTitle').value));
-            params.append('description', encodeURIComponent(document.getElementById('inputDescription').value));
-            params.append('image', encodeURIComponent(document.getElementById('inputImage').value));
-            params.append('iframe', encodeURIComponent(document.getElementById('iframeCode').value));
-            
-            const fullUrl = `${baseUrl}?${params.toString()}`;
-            
-            document.getElementById('generatedUrl').value = fullUrl;
-            document.getElementById('output').style.display = 'block';
-            document.getElementById('preview').innerHTML = document.getElementById('iframeCode').value;
-        }
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
 
-        function copyUrl() {
-            const urlField = document.getElementById('generatedUrl');
-            urlField.select();
-            document.execCommand('copy');
-        }
+            try {
+                const response = await fetch('http://95.89.44.24:8000/convert', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        iframe: base64,
+                        image_url: image,
+                        title: title
+                    })
+                });
 
-        // Load existing parameters on page load
-        window.onload = function() {
-            const params = new URLSearchParams(window.location.search);
-            
-            if (params.has('title')) {
-                document.getElementById('inputTitle').value = decodeURIComponent(params.get('title'));
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                const result = await response.text();
+                document.getElementById('result').textContent = result;
+            } catch (error) {
+                document.getElementById('error').textContent = error.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
             }
-            if (params.has('description')) {
-                document.getElementById('inputDescription').value = decodeURIComponent(params.get('description'));
-            }
-            if (params.has('image')) {
-                document.getElementById('inputImage').value = decodeURIComponent(params.get('image'));
-            }
-            if (params.has('iframe')) {
-                document.getElementById('iframeCode').value = decodeURIComponent(params.get('iframe'));
-                document.getElementById('preview').innerHTML = decodeURIComponent(params.get('iframe'));
-            }
-        };
+        }
     </script>
 </body>
 </html>
